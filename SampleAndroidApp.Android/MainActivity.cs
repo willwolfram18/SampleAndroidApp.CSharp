@@ -10,13 +10,15 @@ using Xamarin.Forms.Internals;
 using Microsoft.Extensions.DependencyInjection;
 using SampleAndroidApp.Services;
 using SampleAndroidApp.Droid.Services;
+using SampleAndroidApp.Services.Logging;
+using SampleAndroidApp.Droid.Services.Logging;
+using Android.Content;
 
 namespace SampleAndroidApp.Droid
 {
     [Activity(Label = "SampleAndroidApp", Icon = "@mipmap/icon", Theme = "@style/MainTheme", MainLauncher = true, ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation)]
     public class MainActivity : global::Xamarin.Forms.Platform.Android.FormsAppCompatActivity
     {
-        private IServiceProvider _serviceProvider;
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -32,6 +34,9 @@ namespace SampleAndroidApp.Droid
             Xamarin.Essentials.Platform.Init(this, savedInstanceState);
             global::Xamarin.Forms.Forms.Init(this, savedInstanceState);
             LoadApplication(new App(services));
+
+            var intent = new Intent(ApplicationContext, typeof(SimpleBackgroundService));
+            StartService(intent);
         }
 
         public override void OnRequestPermissionsResult(int requestCode, string[] permissions, [GeneratedEnum] Android.Content.PM.Permission[] grantResults)
@@ -41,9 +46,19 @@ namespace SampleAndroidApp.Droid
             base.OnRequestPermissionsResult(requestCode, permissions, grantResults);
         }
 
+        protected override void OnStop()
+        {
+            var intent = new Intent(ApplicationContext, typeof(SimpleBackgroundService));
+
+            StopService(intent);
+
+            base.OnStop();
+        }
+
         private void ConfigureServices(IServiceCollection services)
         {
-            services.AddTransient<IToastr, ToastrService>();
+            services.AddTransient<IToastr, ToastrService>()
+                .AddTransient(typeof(IWriteLog<>), typeof(Logger<>));
         }
     }
 }
